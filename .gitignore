@@ -1,0 +1,26 @@
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Python virtual environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor and operating system files
+.DS_Store
+.vscode/
+.idea/
+
+# Private data and generated reports
+/data/*
+!/data/sales.csv
+/reports/*
+!/reports/.gitkeep
