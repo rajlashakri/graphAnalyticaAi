@@ -159,13 +159,6 @@ with upload_col:
                 key="dataset_upload",
                 on_change=remember_uploaded_file,
             )
-    else:
-        st.button(
-            "Reset data",
-            icon=":material/refresh:",
-            on_click=reset_uploaded_dataset,
-            help="Remove the current dataset and upload another file",
-        )
 
 if st.session_state.active_dataset_bytes is None:
     st.info("Upload a CSV or Excel file to start exploring your dataset.")
@@ -194,6 +187,12 @@ with st.container(horizontal=True, vertical_alignment="center"):
     st.badge("Loaded", icon=":material/check_circle:", color="green")
     st.caption(
         f"Rows: {summary['rows']:,}  ·  Columns: {summary['columns']}"
+    )
+    st.button(
+        "Reset data",
+        icon=":material/refresh:",
+        on_click=reset_uploaded_dataset,
+        help="Remove the current dataset and upload another file",
     )
     st.download_button(
         "Export CSV",

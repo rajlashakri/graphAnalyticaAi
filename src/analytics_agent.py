@@ -2,6 +2,8 @@
 import re
 import pandas as pd
 
+from src.sandbox import run_approved_operation
+
 
 def find_column(df, text):
     """Find a column mentioned in the user's question."""
@@ -102,7 +104,7 @@ def analyze_question(df, question, graph=None):
         return {
             "status": "success",
             "operation": "missing_values",
-            "result": df[available_columns].isna().sum().to_dict(),
+            "result": run_approved_operation(df, "missing_values"),
         }
 
     if any(word in question for word in
@@ -110,7 +112,7 @@ def analyze_question(df, question, graph=None):
         return {
             "status": "success",
             "operation": "duplicate_rows",
-            "result": int(df.duplicated().sum()),
+            "result": run_approved_operation(df, "duplicate_rows"),
         }
 
     if any(word in question for word in
@@ -118,7 +120,7 @@ def analyze_question(df, question, graph=None):
         return {
             "status": "success",
             "operation": "summary",
-            "result": df[numeric_columns].describe().to_dict(),
+            "result": run_approved_operation(df, "summary"),
         }
 
     if metric is None:
@@ -164,55 +166,32 @@ def analyze_question(df, question, graph=None):
     else:
         operation = "sum"
 
-    # Grouped analysis
+    # Execute grouped and single-column aggregates through the operation
+    # sandbox so analytics are validated against the approved operation list.
     if group_column is not None:
-        grouped = df.groupby(
-            group_column,
-            dropna=False,
-        )[metric]
-
-        if operation == "mean":
-            result = grouped.mean()
-        elif operation == "count":
-            result = grouped.count()
-        elif operation == "max":
-            result = grouped.max()
-        elif operation == "min":
-            result = grouped.min()
-        else:
-            result = grouped.sum()
-
-        result = result.sort_values(
-            ascending=operation in ["min"],
-        )
+        try:
+            result = run_approved_operation(
+                df,
+                operation,
+                column=metric,
+                group_by=group_column,
+            )
+        except (TypeError, ValueError) as error:
+            return {"status": "error", "message": str(error)}
 
         return {
             "status": "success",
             "operation": operation,
             "metric": str(metric),
             "group_by": str(group_column),
-            "result": result.to_dict(),
+            "result": result,
         }
 
-    # Single-column analysis
-    series = df[metric].dropna()
-
-    if series.empty:
-        return {
-            "status": "error",
-            "message": f"Column '{metric}' has no numeric values.",
-        }
-
-    if operation == "mean":
-        result = float(series.mean())
-    elif operation == "count":
-        result = int(series.count())
-    elif operation == "max":
-        result = float(series.max())
-    elif operation == "min":
-        result = float(series.min())
-    else:
-        result = float(series.sum())
+    # Single-column aggregation.
+    try:
+        result = run_approved_operation(df, operation, column=metric)
+    except (TypeError, ValueError) as error:
+        return {"status": "error", "message": str(error)}
 
     return {
         "status": "success",
